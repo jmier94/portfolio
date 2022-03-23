@@ -1,0 +1,139 @@
+SELECT *
+from dbo.coviddeaths
+order by 3,4
+
+SELECT *
+from dbo.covidvaccinations
+order by 3,4
+
+SELECT location, date, total_cases, new_cases, total_deaths, population
+from dbo.coviddeaths
+order by 1,2
+
+-- total cases vs total deaths
+-- shows likelihood of dying if you have covid in Australia
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as death_percentage
+from dbo.coviddeaths
+where location like '%australia%'
+order by 1,2
+
+-- total cases vs population
+-- shows what population of Australia caught covid
+SELECT location, date, population, total_cases,(total_cases/population)*100 as infection_likelihood
+from dbo.coviddeaths
+where location like '%australia%'
+order by 1,2
+
+-- countries with highest infection rate compared to population
+SELECT location, population, MAX(total_cases) as highest_infection_count, MAX((total_cases/population))*100 as percentage_population_infected
+from dbo.coviddeaths
+group by location, population
+order by percentage_population_infected desc
+
+-- countries with the highest death count
+SELECT location, MAX (cast(total_deaths as int)) as total_death_count
+from dbo.coviddeaths
+where continent is not null
+group by location
+order by total_death_count desc
+
+-- continents with the highest death count
+SELECT location, MAX (cast(total_deaths as int)) as total_death_count
+from dbo.coviddeaths
+where continent is null
+group by location
+order by total_death_count desc
+
+-- global number of cases, deaths and percentage of deaths by date
+SELECT date, sum(new_cases) as total_cases, sum(cast(new_deaths as int)) as total_deaths, sum(cast(new_deaths as int))/sum(new_cases)*100 as death_percentage
+from dbo.coviddeaths
+where continent is not null
+group by date
+order by 1,2
+
+-- global number of cases, deaths and percentage of deaths overall
+SELECT sum(new_cases) as total_cases, sum(cast(new_deaths as int)) as total_deaths, sum(cast(new_deaths as int))/sum(new_cases)*100 as death_percentage
+from dbo.coviddeaths
+where continent is not null
+order by 1,2
+
+
+-- joining deaths & vaccination tables
+SELECT *
+from dbo.coviddeaths dea
+join dbo.covidvaccinations vax
+	on dea.location = vax.location
+	and dea.date = vax.date
+
+-- percentage of fully vaccinated people vs population of each country
+with popvsvax (continent, location, date, population, people_fully_vaccinated)
+as
+(
+SELECT dea.continent, dea.location, dea.date, dea.population, vax.people_fully_vaccinated
+from dbo.coviddeaths dea
+join dbo.covidvaccinations vax
+	on dea.location = vax.location
+	and dea.date = vax.date
+where dea.continent is not null
+--and dea.location like '%australia%'
+)
+SELECT *, (people_fully_vaccinated/population)*100 as total_vaccination_percentage
+from popvsvax
+
+-- percentage of fully vaccinated people using create table & insert into functions
+DROP TABLE if exists #percentage_population_vaccinated
+create table #percentage_population_vaccinated
+(
+continent nvarchar(255),
+location nvarchar (255),
+date datetime,
+population numeric,
+people_fully_vaccinated numeric
+)
+
+insert into #percentage_population_vaccinated
+SELECT dea.continent, dea.location, dea.date, dea.population, vax.people_fully_vaccinated
+from dbo.coviddeaths dea
+join dbo.covidvaccinations vax
+	on dea.location = vax.location
+	and dea.date = vax.date
+where dea.continent is not null
+
+SELECT *, (people_fully_vaccinated/population)*100 as percentage_fully_vaccinated
+from #percentage_population_vaccinated
+
+--creating views to store date for visualisation
+
+--view of chances of percentage chance of dying from covid in Australia
+create view australia_death_percentage as
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as death_percentage
+from dbo.coviddeaths
+where location like '%australia%'
+
+--view of highest infection rates
+create view highest_infection_rates as
+SELECT location, population, MAX(total_cases) as highest_infection_count, MAX((total_cases/population))*100 as percentage_population_infected
+from dbo.coviddeaths
+group by location, population
+
+--view of global cases, deaths amd death percentage
+create view global_stats_by_date as
+SELECT date, sum(new_cases) as total_cases, sum(cast(new_deaths as int)) as total_deaths, sum(cast(new_deaths as int))/sum(new_cases)*100 as death_percentage
+from dbo.coviddeaths
+where continent is not null
+group by date
+
+--view of vaccination percentage by country
+create view vaccination_percentage_by_country as
+with popvsvax (continent, location, date, population, people_fully_vaccinated)
+as
+(
+SELECT dea.continent, dea.location, dea.date, dea.population, vax.people_fully_vaccinated
+from dbo.coviddeaths dea
+join dbo.covidvaccinations vax
+	on dea.location = vax.location
+	and dea.date = vax.date
+where dea.continent is not null
+)
+SELECT *, (people_fully_vaccinated/population)*100 as total_vaccination_percentage
+from popvsvax
