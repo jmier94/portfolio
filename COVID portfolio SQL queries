@@ -75,7 +75,6 @@ join dbo.covidvaccinations vax
 	on dea.location = vax.location
 	and dea.date = vax.date
 where dea.continent is not null
---and dea.location like '%australia%'
 )
 SELECT *, (people_fully_vaccinated/population)*100 as total_vaccination_percentage
 from popvsvax
@@ -102,7 +101,7 @@ where dea.continent is not null
 SELECT *, (people_fully_vaccinated/population)*100 as percentage_fully_vaccinated
 from #percentage_population_vaccinated
 
---creating views to store date for visualisation
+--CREATING VIEWS TO STORE FOR DATA VISUALISATION
 
 --view of chances of percentage chance of dying from covid in Australia
 create view australia_death_percentage as
