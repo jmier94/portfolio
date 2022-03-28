@@ -1,14 +1,14 @@
 SELECT * 
 from dbo.nashvillehousing
 
---standardise the date format
+--standardising the date format
 SELECT SaleDateConverted, CONVERT (Date, SaleDate)
 from dbo.nashvillehousing
 
 UPDATE dbo.nashvillehousing
 SET SaleDate = CONVERT (Date, SaleDate)
 
---if that query didn't work
+--if the query above didn't work
 ALTER TABLE dbo.nashvillehousing
 ADD SaleDateConverted Date;
 
@@ -39,7 +39,7 @@ JOIN dbo.nashvillehousing b
 	AND a.UniqueID <> b.UniqueID
 where a.PropertyAddress is null
 
---breaking out property address into individual columns (address, city, state)
+--breaking out property address into individual columns (address & city)
 SELECT PropertyAddress
 from dbo.nashvillehousing
 
@@ -108,7 +108,7 @@ when SoldAsVacant = 'N' THEN 'No'
 else SoldAsVacant
 END
 
---remove duplicates
+--remove duplicate entries
 WITH RowNumCTE AS(
 SELECT *,
 	ROW_NUMBER () OVER (
